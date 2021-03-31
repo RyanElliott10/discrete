@@ -42,7 +42,7 @@ class Time2Vec(nn.Module):
     ):
         super(Time2Vec, self).__init__()
         assert (embed_size % 2 == 0), \
-            "Number of output features must be a multiple of 2."
+            "Embedding size must be a multiple of 2."
 
         self.linear_time_proj = nn.Linear(in_features, embed_size // 2)
         self.periodic_time_proj = nn.Linear(in_features, embed_size // 2)
@@ -70,9 +70,11 @@ class Time2Vec(nn.Module):
     def forward(self, src: Tensor) -> Tensor:
         r"""Forward propagate data.
         Args:
-            src: input shape (*, N, F)
+            src: tensor containing time features.
 
-        Output shape: (*, N, E)
+        Shapes:
+            src: (*, N, F)
+            output: (*, N, E)
         """
         linear = self.linear_time_proj(src)
         periodic = self.activation(self.periodic_time_proj(src))

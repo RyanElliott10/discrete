@@ -46,9 +46,9 @@ class TimeTransformer(nn.Module):
         super(TimeTransformer, self).__init__()
 
         assert (n_time_features > 0), \
-            "There should at least be one time feature used."
+            "There must be at least one time feature."
         assert (n_linear_features > 0), \
-            "There should at least be one linear feature used."
+            "There must be at least one linear feature."
 
         self.n_in_features = n_time_features + n_linear_features
         self.d_model = d_time_embed + d_linear
@@ -199,7 +199,6 @@ def overfit(
         optimizer.step()
 
     print(f"\nStart Loss: {start_loss} | End Loss: {end_loss}")
-
 
 
 def debug():
