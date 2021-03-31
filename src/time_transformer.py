@@ -3,6 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from attrdict import AttrDict
 from torch import Tensor
 
 from time2vec import Time2Vec
@@ -121,6 +122,18 @@ class TimeTransformer(nn.Module):
 
         return out
 
+    @classmethod
+    def model_from_dict(cls, params: AttrDict, device: torch.device):
+        return cls(
+            n_time_features=params.n_time_features,
+            n_linear_features=params.n_linear_features,
+            n_out_features=params.n_out_features,
+            d_time_embed=params.d_time_embed,
+            d_linear=params.d_linear, n_head=params.n_head,
+            num_encoder_layers=params.num_encoder_layers,
+            dropout=params.dropout, device=device
+        ).to(device)
+
 
 class PositionalEncoding(nn.Module):
 
@@ -149,10 +162,10 @@ class PositionalEncoding(nn.Module):
 
 
 def overfit(
-    model: TimeTransformer,
-    criterion: nn.CrossEntropyLoss,
-    optimizer: optim.Adam,
-    device: torch.device
+        model: TimeTransformer,
+        criterion: nn.CrossEntropyLoss,
+        optimizer: optim.Adam,
+        device: torch.device
 ):
     # Model hyperparameters
     seq_len = 12
@@ -190,10 +203,10 @@ def overfit(
             end_loss = loss.item()
 
         print(
-            f"\r[Overfit Epoch {epoch+1} / {n_epochs}] Loss: {loss.item()}",
+            f"\r[Overfit Epoch {epoch + 1} / {n_epochs}] Loss: {loss.item()}",
             end='', flush=True
         )
-        
+
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()
@@ -245,12 +258,12 @@ def debug():
         out = out.reshape(-1, n_out_features)
 
         loss = criterion(out, tgt.reshape(-1))
-        
+
         print(
-            f"\r[Epoch {epoch+1} / {n_epochs}] Loss: {loss.item()}", end='',
+            f"\r[Epoch {epoch + 1} / {n_epochs}] Loss: {loss.item()}", end='',
             flush=True
         )
-        
+
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()

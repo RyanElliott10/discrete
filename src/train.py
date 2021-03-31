@@ -1,29 +1,19 @@
 import argparse
+from typing import Tuple
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
 from attrdict import AttrDict
+from torch import Tensor
 
 from time_transformer import TimeTransformer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def debug(cfg: AttrDict):
-    mp = cfg.model
-    tp = cfg.training
-
-    model = TimeTransformer(
-        n_time_features=mp.n_time_features,
-        n_linear_features=mp.n_linear_features,
-        n_out_features=mp.n_out_features, d_time_embed=mp.d_time_embed,
-        d_linear=mp.d_linear, n_head=mp.n_head,
-        num_encoder_layers=mp.num_encoder_layers,
-        dropout=mp.dropout, device=device
-    ).to(device)
-
+def get_rand_data(mp: AttrDict, tp: AttrDict) -> Tuple[Tensor, Tensor]:
     src = torch.randn(
         mp.seq_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
     ).to(device)
@@ -32,6 +22,23 @@ def debug(cfg: AttrDict):
         low=0, high=mp.n_out_features, size=(mp.seq_len, tp.batch_size)
     ).to(device)
 
+    return src, tgt
+
+
+def print_progress(epoch: int, n_epochs: int, loss: float):
+    print(
+        f"\r[Overfit Epoch {epoch + 1} / {n_epochs}] Loss: {loss}",
+        end='', flush=True
+    )
+
+
+def debug(cfg: AttrDict):
+    mp = cfg.model
+    tp = cfg.training
+
+    src, tgt = get_rand_data(mp, tp)
+
+    model = TimeTransformer.model_from_dict(mp, device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -48,11 +55,7 @@ def debug(cfg: AttrDict):
         else:
             end_loss = loss.item()
 
-        print(
-            f"\r[Overfit Epoch {epoch + 1} / {tp.n_epochs}] Loss: "
-            f"{loss.item()}",
-            end='', flush=True
-        )
+        print_progress(epoch, tp.n_epochs, loss.item())
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
@@ -65,23 +68,9 @@ def main(cfg: AttrDict):
     mp = cfg.model
     tp = cfg.training
 
-    model = TimeTransformer(
-        n_time_features=mp.n_time_features,
-        n_linear_features=mp.n_linear_features,
-        n_out_features=mp.n_out_features, d_time_embed=mp.d_time_embed,
-        d_linear=mp.d_linear, n_head=mp.n_head,
-        num_encoder_layers=mp.num_encoder_layers,
-        dropout=mp.dropout, device=device
-    ).to(device)
+    src, tgt = get_rand_data(mp, tp)
 
-    src = torch.randn(
-        mp.seq_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
-    ).to(device)
-
-    tgt = torch.randint(
-        low=0, high=mp.n_out_features, size=(mp.seq_len, tp.batch_size)
-    ).to(device)
-
+    model = TimeTransformer.model_from_dict(mp, device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -98,10 +87,7 @@ def main(cfg: AttrDict):
         else:
             end_loss = loss.item()
 
-        print(
-            f"\r[Epoch {epoch + 1} / {tp.n_epochs}] Loss: {loss.item()}",
-            end='', flush=True
-        )
+        print_progress(epoch, tp.n_epochs, loss.item())
 
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
