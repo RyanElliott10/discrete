@@ -1,6 +1,6 @@
 .idea/
 config.py
-src/transformers/
+src/references/
 runs/
 .data/
 .vscode/

@@ -3,9 +3,9 @@ import math
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from attrdict import AttrDict
 from torch import Tensor
 
+from hyperparameters import ModelHyperparameters
 from time2vec import Time2Vec
 
 
@@ -123,7 +123,7 @@ class TimeTransformer(nn.Module):
         return out
 
     @classmethod
-    def model_from_dict(cls, params: AttrDict, device: torch.device):
+    def model_from_mp(cls, params: ModelHyperparameters, device: torch.device):
         return cls(
             n_time_features=params.n_time_features,
             n_linear_features=params.n_linear_features,
@@ -212,65 +212,3 @@ def overfit(
         optimizer.step()
 
     print(f"\nStart Loss: {start_loss} | End Loss: {end_loss}")
-
-
-def debug():
-    # Model hyperparameters
-    seq_len = 12
-    n_time_features = 6
-    n_linear_features = 10
-    n_out_features = 256
-    d_time_embed = 128
-    d_linear = 256
-    n_head = 8
-    num_encoder_layers = 6
-    dropout = 0.1
-
-    # Training hyperparameters
-    batch_size = 32
-    n_epochs = 50
-    learning_rate = 1e-4
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    model = TimeTransformer(
-        n_time_features=n_time_features, n_linear_features=n_linear_features,
-        n_out_features=n_out_features, d_time_embed=d_time_embed,
-        d_linear=d_linear, n_head=n_head, num_encoder_layers=num_encoder_layers,
-        dropout=dropout, device=device
-    ).to(device)
-
-    src = torch.randn(
-        seq_len, batch_size, n_time_features + n_linear_features
-    ).to(device)
-
-    tgt = torch.randint(
-        low=0, high=n_out_features, size=(seq_len, batch_size)
-    ).to(device)
-
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-    overfit(model, criterion, optimizer, device)
-
-    for epoch in range(n_epochs):
-        out = model(src)
-        out = out.reshape(-1, n_out_features)
-
-        loss = criterion(out, tgt.reshape(-1))
-
-        print(
-            f"\r[Epoch {epoch + 1} / {n_epochs}] Loss: {loss.item()}", end='',
-            flush=True
-        )
-
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
-        optimizer.step()
-
-    out = model(src)
-    print(f"\n{out.shape}")
-
-
-if __name__ == "__main__":
-    debug()

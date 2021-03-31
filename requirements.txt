@@ -21,3 +21,4 @@ urllib3==1.26.3
 websockets==8.1
 torchtext==0.9.1
 spacy==3.0.5
+yaml==5.4.1

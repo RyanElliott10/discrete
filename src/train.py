@@ -5,15 +5,18 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import yaml
-from attrdict import AttrDict
 from torch import Tensor
 
+from hyperparameters import ModelHyperparameters, TrainingHyperparameters
 from time_transformer import TimeTransformer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def get_rand_data(mp: AttrDict, tp: AttrDict) -> Tuple[Tensor, Tensor]:
+def get_rand_data(
+        mp: ModelHyperparameters,
+        tp: TrainingHyperparameters
+) -> Tuple[Tensor, Tensor]:
     src = torch.randn(
         mp.seq_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
     ).to(device)
@@ -32,13 +35,13 @@ def print_progress(epoch: int, n_epochs: int, loss: float):
     )
 
 
-def debug(cfg: AttrDict):
-    mp = cfg.model
-    tp = cfg.training
+def debug(cfg: dict):
+    mp = ModelHyperparameters(cfg["model"])
+    tp = TrainingHyperparameters(cfg["training"])
 
     src, tgt = get_rand_data(mp, tp)
 
-    model = TimeTransformer.model_from_dict(mp, device)
+    model = TimeTransformer.model_from_mp(mp, device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -64,13 +67,13 @@ def debug(cfg: AttrDict):
     print(f"\nStart Loss: {start_loss} | End Loss: {end_loss}")
 
 
-def main(cfg: AttrDict):
-    mp = cfg.model
-    tp = cfg.training
+def main(cfg: dict):
+    mp = ModelHyperparameters(cfg["model"])
+    tp = TrainingHyperparameters(cfg["training"])
 
     src, tgt = get_rand_data(mp, tp)
 
-    model = TimeTransformer.model_from_dict(mp, device)
+    model = TimeTransformer.model_from_mp(mp, device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -111,9 +114,8 @@ if __name__ == "__main__":
 
     with open(args.yaml) as f:
         config = yaml.safe_load(f)
-        cfg_attr = AttrDict(config)
 
     if args.debug:
-        debug(cfg_attr)
+        debug(config)
     else:
-        main(cfg_attr)
+        main(config)
