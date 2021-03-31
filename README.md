@@ -24,3 +24,6 @@
 ### Financial Data
 
 * [Transformer with Time2Vector](https://towardsdatascience.com/stock-predictions-with-state-of-the-art-transformer-and-time-embeddings-3a4485237de6)
+
+## Model
+![Model Architecture](https://github.com/RyanElliott10/Discrete/blob/main/docs/img/architecture.svg)
