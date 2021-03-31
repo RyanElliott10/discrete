@@ -19,3 +19,5 @@ torch==1.7.1
 typing-extensions==3.7.4.3
 urllib3==1.26.3
 websockets==8.1
+torchtext==0.9.1
+spacy==3.0.5
