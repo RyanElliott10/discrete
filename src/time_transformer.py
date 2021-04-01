@@ -3,10 +3,13 @@ import math
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
 from torch import Tensor
 
 from hyperparameters import ModelHyperparameters
 from time2vec import Time2Vec
+
+torch.manual_seed(0)
 
 
 class TimeTransformer(nn.Module):
@@ -66,8 +69,13 @@ class TimeTransformer(nn.Module):
 
         self.projection = nn.Sequential(
             nn.Linear(self.d_model, self.d_model),
+            nn.Dropout(p=dropout),
+            nn.ReLU(),
             nn.Linear(self.d_model, n_out_features),
+            nn.Dropout(p=dropout),
         )
+
+        self.dropout1 = nn.Dropout(p=dropout)
 
         self.n_linear_features = n_linear_features
         self.n_time_features = n_time_features
@@ -104,11 +112,11 @@ class TimeTransformer(nn.Module):
             linear_features.shape[-1] > 0
         ), "There should at least be one linear feature used."
 
-        time_embeddings = self.time_embedding(time_features) * math.sqrt(
-            self.d_time_embed
+        time_embeddings = F.relu(
+            self.time_embedding(time_features) * math.sqrt(self.d_time_embed)
         )
         time_embeddings = self.positional_encoding(time_embeddings)
-        linear_proj = self.linear_src(linear_features)
+        linear_proj = F.relu(self.dropout1(self.linear_src(linear_features)))
 
         # Concatenate the time embeddings and linear features that were
         # previously separated.
@@ -119,7 +127,7 @@ class TimeTransformer(nn.Module):
             "linear hidden dims must be equal to d_time_embed + d_linear."
         )
 
-        encoded = self.encoder(x)
+        encoded = F.relu(self.encoder(x))
         out = self.projection(encoded)
 
         return out

@@ -2,6 +2,7 @@ from typing import Callable
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 
@@ -45,9 +46,12 @@ class Time2Vec(nn.Module):
 
         self.linear_time_proj = nn.Linear(in_features, embed_size // 2)
         self.periodic_time_proj = nn.Linear(in_features, embed_size // 2)
-        self.dropout = nn.Dropout(dropout)
         self.proj = nn.Linear(embed_size, embed_size)
         self.activation = Time2Vec.get_activation(activation)
+
+        self.dropout1 = nn.Dropout(p=dropout)
+        self.dropout2 = nn.Dropout(p=dropout)
+        self.dropout3 = nn.Dropout(p=dropout)
 
         self.init_weights()
 
@@ -77,15 +81,15 @@ class Time2Vec(nn.Module):
             src: (*, N, F)
             output: (*, N, E)
         """
-        linear = self.linear_time_proj(src)
-        periodic = self.activation(self.periodic_time_proj(src))
-        out = torch.cat([linear, periodic], dim=-1)
-        out = self.dropout(self.proj(out))
+        linear = self.dropout1(self.linear_time_proj(src))
+        periodic = self.dropout2(self.activation(self.periodic_time_proj(src)))
+        out = F.relu(torch.cat([linear, periodic], dim=-1))
+        out = self.dropout3(self.proj(out))
         return out
 
 
 def debug():
-    seq_len = 32
+    window_len = 32
     batch_size = 8
     in_features = 6
     embed_size = 128
@@ -98,7 +102,7 @@ def debug():
     print(f"In shape: {src.shape}")
     print(f"Single example: {out.shape}\n{out}")
 
-    src = torch.randn(seq_len, batch_size, in_features)
+    src = torch.randn(window_len, batch_size, in_features)
     out = t2v(src)
     print(f"\nIn shape: {src.shape}")
     print(f"4th example: {out[:, 3, :].shape}")

@@ -18,11 +18,11 @@ def get_rand_data(
     mp: ModelHyperparameters, tp: TrainingHyperparameters
 ) -> Tuple[Tensor, Tensor]:
     src = torch.randn(
-        mp.seq_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
+        mp.window_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
     ).to(device)
 
     tgt = torch.randint(
-        low=0, high=mp.n_out_features, size=(mp.seq_len, tp.batch_size)
+        low=0, high=mp.n_out_features, size=(mp.window_len, tp.batch_size)
     ).to(device)
 
     return src, tgt

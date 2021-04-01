@@ -3,7 +3,7 @@ data:
   val_path: '/path/to/val'
 
 model:
-  seq_len: 12
+  window_len: 12
   n_time_features: 6
   n_linear_features: 10
   n_out_features: 256
@@ -11,9 +11,9 @@ model:
   d_linear: 256
   n_head: 8
   num_encoder_layers: 6
-  dropout: 0.1
+  dropout: 0.5
 
 training:
   batch_size: 1
-  n_epochs: 500
+  n_epochs: 50
   learning_rate: 0.0001
