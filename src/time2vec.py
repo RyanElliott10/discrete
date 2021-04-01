@@ -34,15 +34,14 @@ class Time2Vec(nn.Module):
     """
 
     def __init__(
-            self,
-            in_features: int,
-            embed_size: int,
-            activation: str = 'sin',
-            dropout: float = 0.1
+        self,
+        in_features: int,
+        embed_size: int,
+        activation: str = "sin",
+        dropout: float = 0.1,
     ):
         super(Time2Vec, self).__init__()
-        assert (embed_size % 2 == 0), \
-            "Embedding size must be a multiple of 2."
+        assert embed_size % 2 == 0, "Embedding size must be a multiple of 2."
 
         self.linear_time_proj = nn.Linear(in_features, embed_size // 2)
         self.periodic_time_proj = nn.Linear(in_features, embed_size // 2)
@@ -54,13 +53,15 @@ class Time2Vec(nn.Module):
 
     @staticmethod
     def get_activation(activation: str) -> Callable:
-        if activation == 'sin':
+        if activation == "sin":
             return torch.sin
-        elif activation == 'cos':
+        elif activation == "cos":
             return torch.cos
         else:
-            raise ValueError(f"Invalid activation function for Time2Vec "
-                             f"{activation} must be of type sin or cos.")
+            raise ValueError(
+                f"Invalid activation function for Time2Vec "
+                f"{activation} must be of type sin or cos."
+            )
 
     def init_weights(self):
         r"""Initialize weights over a uniform distribution."""
@@ -92,19 +93,17 @@ def debug():
     t2v = Time2Vec(in_features, embed_size)
 
     # 13:23:30 2021-3-30
-    src = torch.tensor([
-        [13, 23, 30, 2021, 3, 30]
-    ], dtype=torch.float)
+    src = torch.tensor([[13, 23, 30, 2021, 3, 30]], dtype=torch.float)
     out = t2v(src)
-    print(f'In shape: {src.shape}')
-    print(f'Single example: {out.shape}\n{out}')
+    print(f"In shape: {src.shape}")
+    print(f"Single example: {out.shape}\n{out}")
 
     src = torch.randn(seq_len, batch_size, in_features)
     out = t2v(src)
-    print(f'\nIn shape: {src.shape}')
-    print(f'4th example: {out[:, 3, :].shape}')
-    print(f'Total output: {out.shape}')
+    print(f"\nIn shape: {src.shape}")
+    print(f"4th example: {out[:, 3, :].shape}")
+    print(f"Total output: {out.shape}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     debug()

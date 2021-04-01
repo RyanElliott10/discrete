@@ -1,5 +1,4 @@
 class ModelHyperparameters(object):
-
     def __init__(self, data: dict):
         self.seq_len = data["seq_len"]
         self.n_time_features = data["n_time_features"]
@@ -13,7 +12,6 @@ class ModelHyperparameters(object):
 
 
 class TrainingHyperparameters(object):
-
     def __init__(self, data: dict):
         self.batch_size = data["batch_size"]
         self.n_epochs = data["n_epochs"]
