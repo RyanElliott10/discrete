@@ -54,14 +54,9 @@ def debug(cfg: dict):
 
         loss = criterion(out, tgt.reshape(-1))
 
-        if epoch == 0:
-            start_loss = loss.item()
-        else:
-            end_loss = loss.item()
-
-        print_progress(epoch, tp.n_epochs, loss.item())
-
+        optimizer.zero_grad()
         loss.backward()
+
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()
 
@@ -71,6 +66,13 @@ def debug(cfg: dict):
         writer.add_scalar("Training Loss", loss, global_step=step)
         writer.add_scalar("Training Accuracy", running_train_acc, global_step=step)
         step += 1
+
+        if epoch == 0:
+            start_loss = loss.item()
+        else:
+            end_loss = loss.item()
+
+        print_progress(epoch, tp.n_epochs, loss.item())
 
     print(f"\nStart Loss: {start_loss} | End Loss: {end_loss}")
 
@@ -93,16 +95,18 @@ def main(cfg: dict):
 
         loss = criterion(out, tgt.reshape(-1))
 
+        optimizer.zero_grad()
+        loss.backward()
+
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
+        optimizer.step()
+
         if epoch == 0:
             start_loss = loss.item()
         else:
             end_loss = loss.item()
 
         print_progress(epoch, tp.n_epochs, loss.item())
-
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
-        optimizer.step()
 
     print(f"\nStart Loss: {start_loss} | End Loss: {end_loss}")
 
