@@ -3,7 +3,8 @@ data:
   val_path: '/path/to/val'
 
 model:
-  window_len: 12
+  src_window_len: 12
+  tgt_window_len: 8
   n_time_features: 6
   n_linear_features: 10
   n_out_features: 256

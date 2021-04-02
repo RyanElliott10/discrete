@@ -9,7 +9,7 @@ import yaml
 from torch import Tensor
 
 from hyperparameters import ModelHyperparameters, TrainingHyperparameters
-from time_transformer import TimeTransformer
+from time_transformer import AbbreviatedTimeTransformer
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -17,15 +17,61 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def get_rand_data(
     mp: ModelHyperparameters, tp: TrainingHyperparameters
 ) -> Tuple[Tensor, Tensor]:
+    r"""Returns random data for testing the model.
+
+    Shapes
+        src: (S, N, F)
+        tgt: (S, N)
+    """
     src = torch.randn(
-        mp.window_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
+        mp.src_window_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
     ).to(device)
 
     tgt = torch.randint(
-        low=0, high=mp.n_out_features, size=(mp.window_len, tp.batch_size)
+        low=0, high=mp.n_out_features, size=(mp.src_window_len, tp.batch_size)
     ).to(device)
 
     return src, tgt
+
+
+def get_encoder_decoder_rand_data(
+    mp: ModelHyperparameters, tp: TrainingHyperparameters
+) -> Tuple[Tensor, Tensor]:
+    r"""Returns random data for testing the model.
+
+    Shapes
+        src: (S, N, F)
+        tgt: (T, N)
+    """
+    src = torch.randn(
+        mp.src_window_len, tp.batch_size, mp.n_time_features + mp.n_linear_features
+    ).to(device)
+
+    tgt = torch.randint(
+        low=0, high=mp.n_out_features, size=(mp.tgt_window_len, tp.batch_size)
+    ).to(device)
+
+    return src, tgt
+
+
+def get_data(
+    mp: ModelHyperparameters, tp: TrainingHyperparameters
+) -> Tuple[Tensor, Tensor]:
+    if mp.type == "abbreviated":
+        return get_rand_data(mp, tp)
+    elif mp.type == "variable":
+        return get_encoder_decoder_rand_data(mp, tp)
+    else:
+        raise ValueError("Model type must be one of abbreviated or variable.")
+
+
+def get_model(mp: ModelHyperparameters):
+    if mp.type == "abbreviated":
+        return AbbreviatedTimeTransformer.model_from_mp(mp, device)
+    elif mp.type == "variable":
+        return VariableTimeTransformer.model_from_mp(mp, device)
+    else:
+        raise ValueError("Model type must be one of abbreviated or variable.")
 
 
 def print_progress(epoch: int, n_epochs: int, loss: float):
@@ -38,9 +84,9 @@ def debug(cfg: dict):
     mp = ModelHyperparameters(cfg["model"])
     tp = TrainingHyperparameters(cfg["training"])
 
-    src, tgt = get_rand_data(mp, tp)
+    src, tgt = get_data(mp, tp)
 
-    model = TimeTransformer.model_from_mp(mp, device)
+    model = get_model(mp)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -50,6 +96,7 @@ def debug(cfg: dict):
 
     for epoch in range(tp.n_epochs):
         out = model(src)
+
         out = out.reshape(-1, mp.n_out_features)
 
         loss = criterion(out, tgt.reshape(-1))
@@ -83,7 +130,7 @@ def main(cfg: dict):
 
     src, tgt = get_rand_data(mp, tp)
 
-    model = TimeTransformer.model_from_mp(mp, device)
+    model = get_model(mp)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=tp.learning_rate)
 
@@ -114,7 +161,7 @@ def main(cfg: dict):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-y", "--yaml", required=True, type=str, help="Path to .yaml config file"
+        "-c", "--config", required=True, type=str, help="Path to .yaml config file"
     )
     parser.add_argument(
         "-d", "--debug", default=False, type=bool, help="Flag to run in debug mode."
@@ -122,7 +169,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    with open(args.yaml) as f:
+    with open(args.config) as f:
         config = yaml.safe_load(f)
 
     if args.debug:

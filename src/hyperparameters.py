@@ -1,6 +1,8 @@
 class ModelHyperparameters(object):
     def __init__(self, data: dict):
-        self.window_len = data["window_len"]
+        self.type = data["type"]
+        self.src_window_len = data["src_window_len"]
+        self.tgt_window_len = data["tgt_window_len"]
         self.n_time_features = data["n_time_features"]
         self.n_linear_features = data["n_linear_features"]
         self.n_out_features = data["n_out_features"]

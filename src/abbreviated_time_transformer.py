@@ -12,13 +12,19 @@ from time2vec import Time2Vec
 torch.manual_seed(0)
 
 
-class TimeTransformer(nn.Module):
+class AbbreviatedTimeTransformer(nn.Module):
     r"""A transformer that utilizes time embeddings via a Time2Vec layer.
     Strictly uses the encoder, no decoding occurs within this model.
 
     This model does not use masking of any type; all input sequences are of the
     same length and future token masking is not required when not using a
-    decoder.
+    decoder. This means that this model is only capabale of performing a
+    statically-sized seq2seq modelling. If the input window is n (128) in length, the
+    output window will also be n (128) in length. If we would like to perform a
+    different task, perhaps one where the input window is n (128) and the output window
+    is m (8), we would need to utilize a full encoder-decoder transformer. This model
+    architecture can be found as VariableTimeTransformer, where the N stands for the model's
+    output size variability.
 
     Args:
         n_time_features: the number of features used as input into the
@@ -48,7 +54,7 @@ class TimeTransformer(nn.Module):
         device: torch.device,
         use_pos_enc: bool = False,
     ):
-        super(TimeTransformer, self).__init__()
+        super(AbbreviatedTimeTransformer, self).__init__()
 
         assert n_time_features > 0, "There must be at least one time feature."
         assert n_linear_features > 0, "There must be at least one linear feature."
@@ -116,8 +122,8 @@ class TimeTransformer(nn.Module):
             linear_features.shape[-1] > 0
         ), "There should at least be one linear feature used."
 
-        time_embeddings = F.hardswish(
-            self.time_embedding(time_features) * math.sqrt(self.d_time_embed)
+        time_embeddings = self.time_embedding(time_features) * math.sqrt(
+            self.d_time_embed
         )
         if self.positional_encoding is not None:
             time_embeddings = self.positional_encoding(time_embeddings)

@@ -3,7 +3,9 @@ data:
   val_path: '/path/to/val'
 
 model:
-  window_len: 12
+  type: abbreviated
+  src_window_len: 128
+  tgt_window_len: 8
   n_time_features: 6
   n_linear_features: 10
   n_out_features: 256
@@ -15,6 +17,6 @@ model:
   use_pos_enc: false
 
 training:
-  batch_size: 1
+  batch_size: 32
   n_epochs: 50
   learning_rate: 0.0001
