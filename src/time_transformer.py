@@ -46,6 +46,7 @@ class TimeTransformer(nn.Module):
         num_encoder_layers: int,
         dropout: float,
         device: torch.device,
+        use_pos_enc: bool = False,
     ):
         super(TimeTransformer, self).__init__()
 
@@ -56,7 +57,10 @@ class TimeTransformer(nn.Module):
         self.d_model = d_time_embed + d_linear
 
         self.time_embedding = Time2Vec(n_time_features, d_time_embed)
-        self.positional_encoding = PositionalEncoding(d_time_embed, dropout)
+
+        self.positional_encoding = None
+        if use_pos_enc:
+            self.positional_encoding = PositionalEncoding(d_time_embed, dropout)
         self.linear_src = nn.Linear(n_linear_features, d_linear)
 
         encoder_sublayers = nn.TransformerEncoderLayer(
@@ -70,7 +74,7 @@ class TimeTransformer(nn.Module):
         self.projection = nn.Sequential(
             nn.Linear(self.d_model, self.d_model),
             nn.Dropout(p=dropout),
-            nn.ReLU(),
+            nn.Hardswish(),
             nn.Linear(self.d_model, n_out_features),
             nn.Dropout(p=dropout),
         )
@@ -112,22 +116,23 @@ class TimeTransformer(nn.Module):
             linear_features.shape[-1] > 0
         ), "There should at least be one linear feature used."
 
-        time_embeddings = F.relu(
+        time_embeddings = F.hardswish(
             self.time_embedding(time_features) * math.sqrt(self.d_time_embed)
         )
-        time_embeddings = self.positional_encoding(time_embeddings)
-        linear_proj = F.relu(self.dropout1(self.linear_src(linear_features)))
+        if self.positional_encoding is not None:
+            time_embeddings = self.positional_encoding(time_embeddings)
+        linear_proj = self.dropout1(self.linear_src(linear_features))
 
         # Concatenate the time embeddings and linear features that were
         # previously separated.
-        x = torch.cat([time_embeddings, linear_proj], dim=-1)
+        x = F.hardswish(torch.cat([time_embeddings, linear_proj], dim=-1))
 
         assert x.shape[-1] == self.d_time_embed + self.d_linear, (
             "The dimensionality of the concatenated time embeddings and "
             "linear hidden dims must be equal to d_time_embed + d_linear."
         )
 
-        encoded = F.relu(self.encoder(x))
+        encoded = F.hardswish(self.encoder(x))
         out = self.projection(encoded)
 
         return out
@@ -144,6 +149,7 @@ class TimeTransformer(nn.Module):
             num_encoder_layers=params.num_encoder_layers,
             dropout=params.dropout,
             device=device,
+            use_pos_enc=params.use_pos_enc,
         ).to(device)
 
 

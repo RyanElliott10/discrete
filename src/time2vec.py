@@ -83,7 +83,7 @@ class Time2Vec(nn.Module):
         """
         linear = self.dropout1(self.linear_time_proj(src))
         periodic = self.dropout2(self.activation(self.periodic_time_proj(src)))
-        out = F.relu(torch.cat([linear, periodic], dim=-1))
+        out = F.hardswish(torch.cat([linear, periodic], dim=-1))
         out = self.dropout3(self.proj(out))
         return out
 

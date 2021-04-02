@@ -9,6 +9,7 @@ class ModelHyperparameters(object):
         self.n_head = data["n_head"]
         self.num_encoder_layers = data["num_encoder_layers"]
         self.dropout = data["dropout"]
+        self.use_pos_enc = data["use_pos_enc"]
 
 
 class TrainingHyperparameters(object):

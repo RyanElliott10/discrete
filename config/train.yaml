@@ -12,6 +12,7 @@ model:
   n_head: 8
   num_encoder_layers: 6
   dropout: 0.1
+  use_pos_enc: false
 
 training:
   batch_size: 32
