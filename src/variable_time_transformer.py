@@ -2,7 +2,6 @@ import math
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 from torch import Tensor
 
@@ -13,39 +12,57 @@ torch.manual_seed(0)
 
 
 class VariableTimeTransformer(nn.Module):
-    r"""An encoder decoder transformer that can predict price movements n days into the
+    r"""An encoder decoder transformer that can predict price movements n
+    days into the
     future.
 
     Args:
         src_window: the number of previous timesteps.
         tgt_window: the number of timesteps to predict (n days)
+        n_head: number of heads in the multi-head attention models.
+        n_encoder_layers: the number of encoder sublayers.
+        n_decoder_layers: the number of decoder sublayers.
+        n_time_features: the number of features used as input into the
+            Time2Vec model.
+        n_linear_features: the number of linear, non-time features.
+        n_out_features: the number of output features.
+        d_time_embed: the number of features output by the Time2Vec
+            model.
+        d_linear_embed: the number of features for the linear projection
+            layer. d_model = d_time_embed + d_linear_embed_embed
+        dropout: dropout value
+        device: device to send tensors to (CPU, CUDA, etc.)
 
     """
 
     def __init__(
-        self,
-        src_window: int,
-        tgt_window: int,
-        n_head: int,
-        n_encoder_layers: int,
-        n_decoder_layers: int,
-        n_time_features: int,
-        n_linear_features: int,
-        d_time_embed: int,
-        d_linear_embed: int,
-        dropout: float,
-        device: torch.device,
+            self,
+            src_window: int,
+            tgt_window: int,
+            n_head: int,
+            n_encoder_layers: int,
+            n_decoder_layers: int,
+            n_time_features: int,
+            n_linear_features: int,
+            n_out_features: int,
+            d_time_embed: int,
+            d_linear_embed: int,
+            dropout: float,
+            device: torch.device,
     ):
         super(VariableTimeTransformer, self).__init__()
 
         assert n_time_features > 0, "There must be at least one time feature."
-        assert n_linear_features > 0, "There must be at least one linear feature."
+        assert n_linear_features > 0, "There must be at least one linear " \
+                                      "feature."
 
         self.d_model = d_time_embed + d_linear_embed
         self.n_in_features = n_time_features + n_linear_features
 
         self.time_embedding = Time2Vec(n_time_features, d_time_embed)
-        self.linear_embedding = nn.Linear(n_linear_features, d_linear_embed)
+        self.linear_embedding = nn.Linear(
+            n_linear_features, d_linear_embed
+        )
 
         self.encoder = nn.TransformerEncoder(
             encoder_layer=nn.TransformerEncoderLayer(
@@ -55,8 +72,7 @@ class VariableTimeTransformer(nn.Module):
             norm=nn.LayerNorm(self.d_model),
         )
 
-        # TODO: Figure out embeddings, target input/output shape,
-        # self.tgt_embedding = nn.Linear()
+        self.tgt_embedding = nn.Linear(n_out_features, self.d_model)
         self.decoder = nn.TransformerDecoder(
             decoder_layer=nn.TransformerDecoderLayer(
                 d_model=self.d_model, nhead=n_head, dropout=dropout
@@ -66,14 +82,17 @@ class VariableTimeTransformer(nn.Module):
         )
 
         self.projection = nn.Sequential(
-            nn.Linear(self.d_model, self.d_model),
             nn.Hardswish(),
-            nn.Linear(self.d_model, tgt_window),
+            nn.Linear(self.d_model, self.d_model)
         )
 
-        self.device = device
         self.src_window = src_window
         self.tgt_window = tgt_window
+        self.n_linear_features = n_linear_features
+        self.n_time_features = n_time_features
+        self.d_time_embed = d_time_embed
+        self.d_linear_embed = d_linear_embed
+        self.device = device
 
     def future_token_square_mask(self, sz: int) -> Tensor:
         r"""Generate a square mask for the sequence. The masked positions are
@@ -85,7 +104,7 @@ class VariableTimeTransformer(nn.Module):
         https://www.reddit.com/r/MachineLearning/comments/bjgpt2
         /d_confused_about_using_masking_in_transformer/
 
-        torch.triu(..., diagnonal=1) is required to avoid masking the
+        torch.triu(..., diagonal=1) is required to avoid masking the
         current token.
         """
         mask = torch.triu(torch.ones(sz, sz), diagonal=1).bool()
@@ -104,23 +123,24 @@ class VariableTimeTransformer(nn.Module):
         """
         tgt_seq_len, N = tgt.shape
         assert (
-            tgt_seq_len == self.tgt_window
-        ), f"The output sequence length must be the same length the target window. {tgt_seq_len} /= {self.tgt_window}"
+                tgt_seq_len == self.tgt_window
+        ), f"The output sequence length must be the same length the target " \
+           f"window. {tgt_seq_len} /= {self.tgt_window}"
 
         tgt_future_mask = self.future_token_square_mask(tgt_seq_len)
 
         assert (
-            src.shape[-1] == self.n_in_features
+                src.shape[-1] == self.n_in_features
         ), "The shape must be of size time_features + linear_features."
 
         time_features = src[:, :, : self.n_time_features]
-        linear_features = src[:, :, self.n_time_features :]
+        linear_features = src[:, :, self.n_time_features:]
 
         assert (
-            time_features.shape[-1] > 0
+                time_features.shape[-1] > 0
         ), "There should at least be one time feature used."
         assert (
-            linear_features.shape[-1] > 0
+                linear_features.shape[-1] > 0
         ), "There should at least be one linear feature used."
 
         time_embeddings = self.time_embedding(time_features) * math.sqrt(
@@ -135,4 +155,26 @@ class VariableTimeTransformer(nn.Module):
         encoded = self.encoder(src_embeddings)
 
         tgt_embeddings = self.tgt_embedding(tgt)
-        decoder = self.decoder(tgt_embeddings, encoded, tgt_mask=tgt_future_mask)
+        decoder = self.decoder(
+            tgt_embeddings, encoded, tgt_mask=tgt_future_mask
+        )
+
+        out = self.projection(decoder)
+        return out
+
+    @classmethod
+    def model_from_mp(cls, params: ModelHyperparameters, device: torch.device):
+        return cls(
+            src_window=params.src_window_len,
+            tgt_window=params.tgt_window_len,
+            n_head=params.n_head,
+            n_encoder_layers=params.n_encoder_layers,
+            n_decoder_layers=params.n_decoder_layers,
+            n_time_features=params.n_time_features,
+            n_linear_features=params.n_linear_features,
+            n_out_features=params.n_out_features,
+            d_time_embed=params.d_time_embed,
+            d_linear_embed=params.d_linear_embed,
+            dropout=params.dropout,
+            device=device,
+        )

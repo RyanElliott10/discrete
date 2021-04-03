@@ -7,9 +7,10 @@ class ModelHyperparameters(object):
         self.n_linear_features = data["n_linear_features"]
         self.n_out_features = data["n_out_features"]
         self.d_time_embed = data["d_time_embed"]
-        self.d_linear = data["d_linear"]
+        self.d_linear_embed = data["d_linear_embed"]
         self.n_head = data["n_head"]
-        self.num_encoder_layers = data["num_encoder_layers"]
+        self.n_encoder_layers = data["n_encoder_layers"]
+        self.n_decoder_layers = data["n_decoder_layers"]
         self.dropout = data["dropout"]
         self.use_pos_enc = data["use_pos_enc"]
 

@@ -1,6 +1,6 @@
 data:
-  train_path: '/path/to/train'
-  val_path: '/path/to/val'
+  train_path: /path/to/train
+  val_path: /path/to/val
 
 model:
   src_window_len: 12
@@ -9,9 +9,9 @@ model:
   n_linear_features: 10
   n_out_features: 256
   d_time_embed: 128
-  d_linear: 256
+  d_linear_embed: 256
   n_head: 8
-  num_encoder_layers: 6
+  n_encoder_layers: 6
   dropout: 0.1
   use_pos_enc: false
 

@@ -35,11 +35,11 @@ class Time2Vec(nn.Module):
     """
 
     def __init__(
-        self,
-        in_features: int,
-        embed_size: int,
-        activation: str = "sin",
-        dropout: float = 0.1,
+            self,
+            in_features: int,
+            embed_size: int,
+            activation: str = "sin",
+            dropout: float = 0.1,
     ):
         super(Time2Vec, self).__init__()
         assert embed_size % 2 == 0, "Embedding size must be a multiple of 2."

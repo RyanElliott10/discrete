@@ -3,9 +3,9 @@ data:
   val_path: /path/to/val
 
 model:
-  type: abbreviated
+  type: variable
   src_window_len: 12
-  tgt_window_len:
+  tgt_window_len: 8
   n_time_features: 6
   n_linear_features: 10
   n_out_features: 256
@@ -13,7 +13,7 @@ model:
   d_linear_embed: 256
   n_head: 8
   n_encoder_layers: 6
-  n_decoder_layers:
+  n_decoder_layers: 6
   dropout: 0.5
   use_pos_enc: false
 

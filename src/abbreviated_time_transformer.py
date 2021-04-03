@@ -2,7 +2,6 @@ import math
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
 from torch import Tensor
 
@@ -18,12 +17,16 @@ class AbbreviatedTimeTransformer(nn.Module):
 
     This model does not use masking of any type; all input sequences are of the
     same length and future token masking is not required when not using a
-    decoder. This means that this model is only capabale of performing a
-    statically-sized seq2seq modelling. If the input window is n (128) in length, the
+    decoder. This means that this model is only capable of performing a
+    statically-sized seq2seq modelling. If the input window is n (128) in
+    length, the
     output window will also be n (128) in length. If we would like to perform a
-    different task, perhaps one where the input window is n (128) and the output window
-    is m (8), we would need to utilize a full encoder-decoder transformer. This model
-    architecture can be found as VariableTimeTransformer, where the N stands for the model's
+    different task, perhaps one where the input window is n (128) and the
+    output window
+    is m (8), we would need to utilize a full encoder-decoder transformer.
+    This model
+    architecture can be found as VariableTimeTransformer, where the N stands
+    for the model's
     output size variability.
 
     Args:
@@ -33,56 +36,55 @@ class AbbreviatedTimeTransformer(nn.Module):
         n_out_features: the number of expected outputs.
         d_time_embed: the number of features output by the Time2Vec
             model.
-        d_linear: the number of features for the linear projection
-            layer. d_model = d_time_embed + d_linear
+        d_linear_embed: the number of features for the linear projection
+            layer. d_model = d_time_embed + d_linear_embed
         n_head: number of heads in the multi-head attention models.
-        num_encoder_layers: the number of sub encoder layers.
+        n_encoder_layers: the number of sub encoder layers.
         dropout: dropout value
         device: device to send tensors to (CPU, CUDA, etc.)
     """
 
     def __init__(
-        self,
-        n_time_features: int,
-        n_linear_features: int,
-        n_out_features: int,
-        d_time_embed: int,
-        d_linear: int,
-        n_head: int,
-        num_encoder_layers: int,
-        dropout: float,
-        device: torch.device,
-        use_pos_enc: bool = False,
+            self,
+            n_time_features: int,
+            n_linear_features: int,
+            n_out_features: int,
+            d_time_embed: int,
+            d_linear_embed: int,
+            n_head: int,
+            n_encoder_layers: int,
+            dropout: float,
+            device: torch.device,
+            use_pos_enc: bool = False,
     ):
         super(AbbreviatedTimeTransformer, self).__init__()
 
         assert n_time_features > 0, "There must be at least one time feature."
-        assert n_linear_features > 0, "There must be at least one linear feature."
+        assert n_linear_features > 0, "There must be at least one linear " \
+                                      "feature."
 
         self.n_in_features = n_time_features + n_linear_features
-        self.d_model = d_time_embed + d_linear
+        self.d_model = d_time_embed + d_linear_embed
 
         self.time_embedding = Time2Vec(n_time_features, d_time_embed)
 
         self.positional_encoding = None
         if use_pos_enc:
             self.positional_encoding = PositionalEncoding(d_time_embed, dropout)
-        self.linear_src = nn.Linear(n_linear_features, d_linear)
+        self.linear_src = nn.Linear(n_linear_features, d_linear_embed)
 
         encoder_sublayers = nn.TransformerEncoderLayer(
             d_model=self.d_model, nhead=n_head, dropout=dropout
         )
         encoder_norm = nn.LayerNorm(self.d_model)
         self.encoder = nn.TransformerEncoder(
-            encoder_sublayers, num_layers=num_encoder_layers, norm=encoder_norm
+            encoder_sublayers, num_layers=n_encoder_layers, norm=encoder_norm
         )
 
         self.projection = nn.Sequential(
-            nn.Linear(self.d_model, self.d_model),
-            nn.Dropout(p=dropout),
             nn.Hardswish(),
             nn.Linear(self.d_model, n_out_features),
-            nn.Dropout(p=dropout),
+            nn.Dropout(p=dropout)
         )
 
         self.dropout1 = nn.Dropout(p=dropout)
@@ -90,7 +92,7 @@ class AbbreviatedTimeTransformer(nn.Module):
         self.n_linear_features = n_linear_features
         self.n_time_features = n_time_features
         self.d_time_embed = d_time_embed
-        self.d_linear = d_linear
+        self.d_linear_embed = d_linear_embed
         self.device = device
 
     def forward(self, src: Tensor) -> Tensor:
@@ -109,17 +111,17 @@ class AbbreviatedTimeTransformer(nn.Module):
             out: (S, N, P)
         """
         assert (
-            src.shape[-1] == self.n_in_features
+                src.shape[-1] == self.n_in_features
         ), "The shape must be of size time_features + linear_features."
 
         time_features = src[:, :, : self.n_time_features]
-        linear_features = src[:, :, self.n_time_features :]
+        linear_features = src[:, :, self.n_time_features:]
 
         assert (
-            time_features.shape[-1] > 0
+                time_features.shape[-1] > 0
         ), "There should at least be one time feature used."
         assert (
-            linear_features.shape[-1] > 0
+                linear_features.shape[-1] > 0
         ), "There should at least be one linear feature used."
 
         time_embeddings = self.time_embedding(time_features) * math.sqrt(
@@ -133,9 +135,9 @@ class AbbreviatedTimeTransformer(nn.Module):
         # previously separated.
         x = F.hardswish(torch.cat([time_embeddings, linear_proj], dim=-1))
 
-        assert x.shape[-1] == self.d_time_embed + self.d_linear, (
+        assert x.shape[-1] == self.d_time_embed + self.d_linear_embed, (
             "The dimensionality of the concatenated time embeddings and "
-            "linear hidden dims must be equal to d_time_embed + d_linear."
+            "linear hidden dims must be equal to d_time_embed + d_linear_embed."
         )
 
         encoded = F.hardswish(self.encoder(x))
@@ -150,9 +152,9 @@ class AbbreviatedTimeTransformer(nn.Module):
             n_linear_features=params.n_linear_features,
             n_out_features=params.n_out_features,
             d_time_embed=params.d_time_embed,
-            d_linear=params.d_linear,
+            d_linear_embed=params.d_linear_embed,
             n_head=params.n_head,
-            num_encoder_layers=params.num_encoder_layers,
+            n_encoder_layers=params.n_encoder_layers,
             dropout=params.dropout,
             device=device,
             use_pos_enc=params.use_pos_enc,
