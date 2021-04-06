@@ -3,11 +3,13 @@ import argparse
 import torch
 import torch.nn as nn
 import yaml
+from torch.utils.data import DataLoader
 
 from abbreviated_time_transformer import AbbreviatedTimeTransformer
 from hyperparameters import ModelHyperparameters, TrainingHyperparameters
 from trainer import AbbreviatedModelTrainer, VariableModelTrainer, ModelTrainer
 from variable_time_transformer import VariableTimeTransformer
+from data import ToyTimeSeriesDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -39,7 +41,14 @@ def main(cfg: dict):
     model = get_model(mp)
     trainer = get_trainer(mp, tp, model)
 
-    trainer.train()
+    dataset = ToyTimeSeriesDataset(
+        src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
+        n_features=mp.n_time_features+mp.n_linear_features,
+        n_out_features=mp.n_out_features, n_data=1
+    )
+    dataloader = DataLoader(dataset, batch_size=tp.batch_size, shuffle=True)
+
+    trainer.train(dataloader)
 
 
 if __name__ == "__main__":

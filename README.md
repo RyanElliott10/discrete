@@ -27,3 +27,14 @@
 
 ## Model
 ![Model Architecture](https://github.com/RyanElliott10/Discrete/blob/main/docs/img/architecture.svg)
+
+## Todo
+* [ ] Research viable output representations
+	* Just do the price difference/percent from the last day
+	* It uses the last close as the principal for each prediction; $y_0$ is independent of $y_1$
+	* Granted, this (almost) defeats the purpose of using a transformer
+		* With $x_N$ representing a close price of $25
+		* $y_0$ would predict +1%, $25.25
+		* $y_1$ would be predict +2.3%, $25.575
+* [ ] Figure out how we would go about predicting short squeeze events
+	* Would we have a simple indicator saying "yes, it will close higher and it'll be a short squeeze"?

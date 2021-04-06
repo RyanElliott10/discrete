@@ -13,8 +13,24 @@ torch.manual_seed(0)
 
 class VariableTimeTransformer(nn.Module):
     r"""An encoder decoder transformer that can predict price movements n
-    days into the
-    future.
+    days into the future.
+
+    Given a time series containing N data points x_{t−N+1}, ..., x_{t−1},
+    x_t, for M step ahead prediction, the input X of the supervised ML model
+    is x_{t−N+1}, ..., x_{t−M}, and the output Y is x_{t−M+1}, x_{t−M+2},
+    ..., x_t.
+
+    For consideration: should we use an embedding or linear layer as the
+    interface for the decoder? It really depends on the expected output
+    representation. Embedding could be used for a rather binary "is it gonna
+    do this?", while a linear layer should be used if the expected output is
+    continuous.
+
+    Extending this model may make sense. The paper "Enhancing the Locality
+    and Breaking the Memory Bottleneck of Transformer on Time Series
+    Forecasting" uses causal convolutional self-attention rather than piecewise.
+    This shows greater ability to detect anomalies (short squeezes, earnings,
+    etc.) and performs better.
 
     Args:
         src_window: the number of previous timesteps.
@@ -63,7 +79,6 @@ class VariableTimeTransformer(nn.Module):
         self.linear_embedding = nn.Linear(
             n_linear_features, d_linear_embed
         )
-
         self.encoder = nn.TransformerEncoder(
             encoder_layer=nn.TransformerEncoderLayer(
                 d_model=self.d_model, nhead=n_head, dropout=dropout
@@ -83,13 +98,14 @@ class VariableTimeTransformer(nn.Module):
 
         self.projection = nn.Sequential(
             nn.Hardswish(),
-            nn.Linear(self.d_model, self.d_model)
+            nn.Linear(self.d_model, n_out_features)
         )
 
         self.src_window = src_window
         self.tgt_window = tgt_window
         self.n_linear_features = n_linear_features
         self.n_time_features = n_time_features
+        self.n_out_features = n_out_features
         self.d_time_embed = d_time_embed
         self.d_linear_embed = d_linear_embed
         self.device = device
@@ -114,34 +130,34 @@ class VariableTimeTransformer(nn.Module):
         r"""Forward propagate data.
 
         Args:
-            src:
-            tgt:
+            src: Input to create the hidden context vector.
+            tgt: Expected output.
 
         Shapes:
-            src:
-            tgt:
+            src: (S, N, E)
+            tgt: (T, N, E)
         """
-        tgt_seq_len, N = tgt.shape
-        assert (
-                tgt_seq_len == self.tgt_window
-        ), f"The output sequence length must be the same length the target " \
-           f"window. {tgt_seq_len} /= {self.tgt_window}"
+        T, N, E = tgt.shape
+        assert T == self.tgt_window, (
+            f"The output sequence length must be the same length the target "
+            f"window. {T} != {self.tgt_window}"
+        )
 
-        tgt_future_mask = self.future_token_square_mask(tgt_seq_len)
+        tgt_future_mask = self.future_token_square_mask(T)
 
-        assert (
-                src.shape[-1] == self.n_in_features
-        ), "The shape must be of size time_features + linear_features."
+        assert src.shape[-1] == self.n_in_features, (
+            f"The shape must be of size time_features + linear_features."
+        )
 
-        time_features = src[:, :, : self.n_time_features]
-        linear_features = src[:, :, self.n_time_features:]
+        time_features = src[:, :, :self.n_time_features]
+        linear_features = src[:, :, -self.n_linear_features:]
 
-        assert (
-                time_features.shape[-1] > 0
-        ), "There should at least be one time feature used."
-        assert (
-                linear_features.shape[-1] > 0
-        ), "There should at least be one linear feature used."
+        assert time_features.shape[-1] > 0, (
+            "There should at least be one time feature used."
+        )
+        assert linear_features.shape[-1] > 0, (
+            "There should at least be one linear feature used."
+        )
 
         time_embeddings = self.time_embedding(time_features) * math.sqrt(
             self.d_time_embed

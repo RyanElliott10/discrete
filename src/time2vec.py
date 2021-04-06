@@ -47,7 +47,7 @@ class Time2Vec(nn.Module):
         self.linear_time_proj = nn.Linear(in_features, embed_size // 2)
         self.periodic_time_proj = nn.Linear(in_features, embed_size // 2)
         self.proj = nn.Linear(embed_size, embed_size)
-        self.activation = Time2Vec.get_activation(activation)
+        self.activation = Time2Vec._get_activation(activation)
 
         self.dropout1 = nn.Dropout(p=dropout)
         self.dropout2 = nn.Dropout(p=dropout)
@@ -56,15 +56,15 @@ class Time2Vec(nn.Module):
         self.init_weights()
 
     @staticmethod
-    def get_activation(activation: str) -> Callable:
+    def _get_activation(activation: str) -> Callable:
         if activation == "sin":
             return torch.sin
         elif activation == "cos":
             return torch.cos
         else:
             raise ValueError(
-                f"Invalid activation function for Time2Vec "
-                f"{activation} must be of type sin or cos."
+                f"Invalid activation function for Time2Vec: "
+                f"\"{activation}\" must be of type sin or cos."
             )
 
     def init_weights(self):
