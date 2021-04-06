@@ -9,7 +9,8 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from hyperparameters import ModelHyperparameters, TrainingHyperparameters
+from discrete.hyperparameters import ModelHyperparameters, \
+    TrainingHyperparameters
 
 
 def print_progress(epoch: int, n_epochs: int, loss: float, debug: bool = False):
