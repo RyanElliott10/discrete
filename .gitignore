@@ -2,8 +2,9 @@
 config.py
 discrete/references/
 runs/
-.data/
+data/
 .vscode/
+*token.pickle
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

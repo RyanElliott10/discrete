@@ -5,12 +5,14 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from discrete.models.abbreviated_time_transformer import AbbreviatedTimeTransformer
-from discrete.hyperparameters import ModelHyperparameters, TrainingHyperparameters
+from discrete.toy_data import ToyTimeSeriesDataset
+from discrete.hyperparameters import ModelHyperparameters, \
+    TrainingHyperparameters
+from discrete.model.abbreviated_time_transformer import \
+    AbbreviatedTimeTransformer
+from discrete.model.variable_time_transformer import VariableTimeTransformer
 from discrete.trainer import AbbreviatedModelTrainer, VariableModelTrainer, \
     ModelTrainer
-from discrete.models.variable_time_transformer import VariableTimeTransformer
-from discrete.data import ToyTimeSeriesDataset
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,7 +46,7 @@ def main(cfg: dict):
 
     dataset = ToyTimeSeriesDataset(
         src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
-        n_features=mp.n_time_features+mp.n_linear_features,
+        n_features=mp.n_time_features + mp.n_linear_features,
         n_out_features=mp.n_out_features, n_data=1
     )
     dataloader = DataLoader(dataset, batch_size=tp.batch_size, shuffle=True)

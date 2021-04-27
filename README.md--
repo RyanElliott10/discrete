@@ -1,4 +1,4 @@
-# discrete
+# Discrete
 
 ## Commitments
 
@@ -26,7 +26,7 @@
 * [Transformer with Time2Vector](https://towardsdatascience.com/stock-predictions-with-state-of-the-art-transformer-and-time-embeddings-3a4485237de6)
 
 ## Model
-![Model Architecture](https://github.com/RyanElliott10/discrete/blob/main/docs/img/architecture.svg)
+![Model Architecture](https://github.com/RyanElliott10/Discrete/blob/main/docs/img/architecture.svg)
 
 ## Todo
 * [ ] Research viable output representations
@@ -38,7 +38,3 @@
 		* $y_1$ would be predict +2.3%, $25.575
 * [ ] Figure out how we would go about predicting short squeeze events
 	* Would we have a simple indicator saying "yes, it will close higher and it'll be a short squeeze"?
-
-## Usage
-### Model Training
-`python3 -m discrete.train -c path/to/config.yaml [-d]`

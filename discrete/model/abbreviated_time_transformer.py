@@ -3,10 +3,10 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from discrete.model.time2vec import Time2Vec
 from torch import Tensor
 
 from discrete.hyperparameters import ModelHyperparameters
-from discrete.models.time2vec import Time2Vec
 
 torch.manual_seed(0)
 
@@ -146,7 +146,11 @@ class AbbreviatedTimeTransformer(nn.Module):
         return out
 
     @classmethod
-    def model_from_mp(cls, params: ModelHyperparameters, device: torch.device):
+    def model_from_mp(
+            cls,
+            params: ModelHyperparameters,
+            device: torch.device
+    ) -> 'AbbreviatedTimeTransformer':
         return cls(
             n_time_features=params.n_time_features,
             n_linear_features=params.n_linear_features,

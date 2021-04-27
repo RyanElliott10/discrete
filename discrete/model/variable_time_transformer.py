@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from discrete.hyperparameters import ModelHyperparameters
-from discrete.models.time2vec import Time2Vec
+from discrete.model.time2vec import Time2Vec
 
 torch.manual_seed(0)
 
@@ -48,7 +48,6 @@ class VariableTimeTransformer(nn.Module):
             layer. d_model = d_time_embed + d_linear_embed_embed
         dropout: dropout value
         device: device to send tensors to (CPU, CUDA, etc.)
-
     """
 
     def __init__(
@@ -179,7 +178,11 @@ class VariableTimeTransformer(nn.Module):
         return out
 
     @classmethod
-    def model_from_mp(cls, params: ModelHyperparameters, device: torch.device):
+    def model_from_mp(
+            cls,
+            params: ModelHyperparameters,
+            device: torch.device
+    ) -> 'VariableTimeTransformer':
         return cls(
             src_window=params.src_window_len,
             tgt_window=params.tgt_window_len,
