@@ -5,6 +5,8 @@ runs/
 data/
 .vscode/
 *token.pickle
+etc/
+share/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

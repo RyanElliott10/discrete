@@ -5,12 +5,12 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from discrete.toy_data import ToyTimeSeriesDataset
 from discrete.hyperparameters import ModelHyperparameters, \
     TrainingHyperparameters
 from discrete.model.abbreviated_time_transformer import \
     AbbreviatedTimeTransformer
 from discrete.model.variable_time_transformer import VariableTimeTransformer
+from discrete.toy_data import ToyTimeSeriesDataset
 from discrete.trainer import AbbreviatedModelTrainer, VariableModelTrainer, \
     ModelTrainer
 

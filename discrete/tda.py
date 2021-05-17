@@ -1,57 +1,48 @@
-import multiprocessing
 import re
-import threading
 import time
-from typing import List
+from typing import List, Set, Union
 
-import backoff
 import pandas as pd
 import ratelimit
 import requests
 import tda
-from tda import auth
-
+from selenium import webdriver
 from tda.client import Client
 
 from discrete.config import (
     token_path,
     api_key,
-    chrome_driver_path,
     redirect_uri,
     all_securities_url,
-    tda_requests_per_limit,
+    price_history_sql_path,
 )
+from discrete.stock_sql import StockSQL
 
-securities_html_pattern = (
+_securities_html_pattern = (
     r"<li><a href='https:\/\/stockanalysis.com\/"
     r"stocks\/(\D+?)\/'>(\D+?) - (\D+?)<\/a><\/li>"
 )
 
 
-pool = threading.BoundedSemaphore(value=multiprocessing.cpu_count())
+class TdaAPI(object):
+    TOO_MANY_REQUESTS_CODE = 429
+    SUCCESS_CODE = 200
 
-
-class TDAAPI(object):
     def __init__(self):
-        try:
-            self.client = auth.client_from_token_file(token_path, api_key)
-        except FileNotFoundError:
-            from selenium import webdriver
+        self.client = tda.auth.easy_client(
+            api_key, redirect_uri, token_path,
+            webdriver_func=lambda: webdriver.Chrome()
+        )
 
-            with webdriver.Chrome(executable_path=chrome_driver_path) as driver:
-                self.client = auth.client_from_login_flow(
-                    driver, api_key, redirect_uri, token_path
-                )
-
-    @backoff.on_exception(backoff.expo, ratelimit.RateLimitException, max_time=60)
+    @ratelimit.sleep_and_retry
     @ratelimit.limits(calls=120, period=60)
     def price_history(
-        self,
-        security: str,
-        period_type: Client.PriceHistory.PeriodType,
-        period: Client.PriceHistory.Period,
-        frequency_type: Client.PriceHistory.FrequencyType,
-        frequency: Client.PriceHistory.Frequency,
+            self,
+            security: str,
+            period_type: Client.PriceHistory.PeriodType,
+            period: Client.PriceHistory.Period,
+            frequency_type: Client.PriceHistory.FrequencyType,
+            frequency: Client.PriceHistory.Frequency,
     ) -> pd.DataFrame:
         resp = self.client.get_price_history(
             symbol=security.upper(),
@@ -60,52 +51,71 @@ class TDAAPI(object):
             frequency_type=frequency_type,
             frequency=frequency,
         )
-        assert resp.status_code == 200, resp.raise_for_status()
-        return pd.json_normalize(resp.json(), record_path=["candles"], meta=["symbol"])
+        if resp.status_code == TdaAPI.SUCCESS_CODE:
+            return pd.json_normalize(
+                resp.json(), record_path=["candles"], meta=["symbol"]
+            )
+        elif resp.status_code == TdaAPI.TOO_MANY_REQUESTS_CODE:
+            time.sleep(60)
+            return self.price_history(
+                security, period_type, period, frequency_type, frequency
+            )
+        resp.raise_for_status()
 
     def parallel_price_history(
-        self,
-        securities: List[str],
-        period_type: Client.PriceHistory.PeriodType,
-        period: Client.PriceHistory.Period,
-        frequency_type: Client.PriceHistory.FrequencyType,
-        frequency: Client.PriceHistory.Frequency,
+            self,
+            securities: Union[Set[str], List[str]],
+            period_type: Client.PriceHistory.PeriodType,
+            period: Client.PriceHistory.Period,
+            frequency_type: Client.PriceHistory.FrequencyType,
+            frequency: Client.PriceHistory.Frequency,
     ):
         for security in securities:
             print(security)
-            data = self.price_history(
+            yield self.price_history(
                 security, period_type, period, frequency_type, frequency
             )
-            data.to_csv(f"data/{security.upper()}.csv")
-            print(data)
 
 
-def fetch_securities_list() -> List[str]:
+def fetch_securities_list(
+        intermediary: bool = False, sql: StockSQL = None) -> Set[str]:
     r = requests.get(all_securities_url)
     if r.status_code != 200:
         raise Exception("Invalid response fetching securities")
 
     content = r.text
-    securities = []
-    for match in re.finditer(securities_html_pattern, content):
-        securities.append(match.group(1))
-    return securities
+    securities = set()
+    for match in re.finditer(_securities_html_pattern, content):
+        securities.add(match.group(1).upper())
+    if not intermediary:
+        return securities
+
+    utd_secs = set(sql.select_cols("price_history", ["security"]))
+    return securities.difference({el[0] for el in utd_secs})
 
 
-def update_sql(data: pd.DataFrame):
-    pass
-
-
-def fetch_all_and_update_sql(api: TDAAPI):
-    securities = fetch_securities_list()
-    price_histories = api.parallel_price_history(
-        securities,
-        Client.PriceHistory.PeriodType.YEAR,
-        Client.PriceHistory.Period.TWENTY_YEARS,
-        Client.PriceHistory.FrequencyType.DAILY,
-        Client.PriceHistory.Frequency.DAILY,
+def update_sql(data: pd.DataFrame, sql: StockSQL):
+    insert_sql = StockSQL.generate_insert_sql_string(
+        "price_history", value_count=StockSQL.NUM_PRICE_HISTORY_VALUES
     )
-    [update_sql(price_history) for price_history in price_histories]
+    cols = list(data.columns)
+    cols = cols[-1:] + cols[:-1]
+    data = data[cols]
+    print(data.head(5))
+    sql.insert_pd(insert_sql, data)
+
+
+def fetch_all_and_update_sql(api: TdaAPI):
+    sql = StockSQL(price_history_sql_path)
+    securities = fetch_securities_list(intermediary=True, sql=sql)
+    for price_history in api.parallel_price_history(
+            securities,
+            Client.PriceHistory.PeriodType.YEAR,
+            Client.PriceHistory.Period.TWENTY_YEARS,
+            Client.PriceHistory.FrequencyType.DAILY,
+            Client.PriceHistory.Frequency.DAILY,
+    ):
+        update_sql(price_history, sql)
 
 
 def _list_generator(l, rate: int) -> List:
@@ -118,7 +128,7 @@ def _list_generator(l, rate: int) -> List:
 
 
 def main():
-    api = TDAAPI()
+    api = TdaAPI()
     fetch_all_and_update_sql(api)
 
 

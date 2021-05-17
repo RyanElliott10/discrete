@@ -3,10 +3,10 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from discrete.model.time2vec import Time2Vec
 from torch import Tensor
 
 from discrete.hyperparameters import ModelHyperparameters
+from discrete.model.time2vec import Time2Vec
 
 torch.manual_seed(0)
 
