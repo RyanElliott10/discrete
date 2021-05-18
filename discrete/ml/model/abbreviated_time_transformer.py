@@ -5,8 +5,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-from discrete.hyperparameters import ModelHyperparameters
-from discrete.model.time2vec import Time2Vec
+from discrete.ml.hyperparameters import ModelHyperparameters
+from discrete.ml.model.time2vec import Time2Vec
 
 torch.manual_seed(0)
 

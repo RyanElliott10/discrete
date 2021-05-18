@@ -1,13 +1,12 @@
 import sqlite3
-from typing import Any, List, Union
+from typing import Any, List, Set, Union
 
 import pandas as pd
 
-from discrete.config import price_history_sql_path
+from discrete.bot.config import price_history_sql_path
 
 
 class StockSQL(object):
-    NUM_PRICE_HISTORY_VALUES = 7
     PRICE_HISTORY_COLS = [
         "security",
         "open",
@@ -17,6 +16,8 @@ class StockSQL(object):
         "volume",
         "datetime",
     ]
+    NUM_PRICE_HISTORY_VALUES = len(PRICE_HISTORY_COLS)
+    PRICE_HISTORY_TABLE = "price_history"
 
     def __init__(self, db_file: str):
         try:
@@ -49,6 +50,14 @@ class StockSQL(object):
         except Exception as e:
             print(e)
 
+    def execute(self, sql: str):
+        try:
+            curs = self.conn.cursor()
+            curs.execute(sql)
+            self.conn.commit()
+        except Exception as e:
+            print(e)
+
     def select_cols(
             self, table_name: str, cols: List[str], where: str = None
     ) -> List[Any]:
@@ -56,7 +65,6 @@ class StockSQL(object):
         sql = StockSQL.generate_select_sql_string(
             table_name, columns, where=where
         )
-        print(sql)
         return self.select(sql)
 
     def fetch_securities(
@@ -65,6 +73,9 @@ class StockSQL(object):
             meta: str,
             table: str
     ) -> pd.DataFrame:
+        r"""Fetches data, as specified by the meta parameter, for the
+        specified securities.
+        """
         if isinstance(securities, str):
             securities = [securities]
         comp = StockSQL.parse_meta(meta)
@@ -75,9 +86,15 @@ class StockSQL(object):
                 ), columns=comp
             )
 
+    def fetch_securities_tickers(self, table: str) -> Set[str]:
+        r"""Fetches all the unique tickers in the database."""
+        return {s[0] for s in self.select(
+            f"""SELECT DISTINCT security FROM {table}"""
+        )}
+
     @staticmethod
     def parse_meta(meta: str) -> List[str]:
-        comp = []
+        comp = ["security"]
         if "O" in meta:
             comp.append("open")
         if "H" in meta:

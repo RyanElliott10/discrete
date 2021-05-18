@@ -5,15 +5,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-from discrete.hyperparameters import ModelHyperparameters
-from discrete.model.time2vec import Time2Vec
+from discrete.ml.hyperparameters import ModelHyperparameters
+from discrete.ml.model.time2vec import Time2Vec
 
 torch.manual_seed(0)
 
 
 class VariableTimeTransformer(nn.Module):
     r"""An encoder decoder transformer that can predict price movements n
-    days into the future.
+    timesteps into the future.
 
     Given a time series containing N data points x_{t−N+1}, ..., x_{t−1},
     x_t, for M step ahead prediction, the input X of the supervised ML model

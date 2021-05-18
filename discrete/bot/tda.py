@@ -9,14 +9,14 @@ import tda
 from selenium import webdriver
 from tda.client import Client
 
-from discrete.config import (
+from discrete.bot.config import (
     token_path,
     api_key,
     redirect_uri,
     all_securities_url,
     price_history_sql_path,
 )
-from discrete.stock_sql import StockSQL
+from discrete.bot.stock_sql import StockSQL
 
 _securities_html_pattern = (
     r"<li><a href='https:\/\/stockanalysis.com\/"

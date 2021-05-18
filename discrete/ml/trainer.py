@@ -9,7 +9,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from discrete.hyperparameters import ModelHyperparameters, \
+from discrete.ml.hyperparameters import ModelHyperparameters, \
     TrainingHyperparameters
 
 
@@ -199,6 +199,9 @@ class VariableModelTrainer(ModelTrainer):
                 src = batch['src'].transpose(0, 1)
                 # data_loader outputs (N, T), we need (T, N, E)
                 tgt = batch['tgt'].transpose(0, 1)
+
+                print(src.shape, tgt.shape)
+                exit(0)
 
                 out = self.model(src, tgt)
 

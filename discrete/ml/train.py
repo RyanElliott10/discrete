@@ -5,14 +5,17 @@ import torch.nn as nn
 import yaml
 from torch.utils.data import DataLoader
 
-from discrete.hyperparameters import ModelHyperparameters, \
+from discrete.ml.hyperparameters import ModelHyperparameters, \
     TrainingHyperparameters
-from discrete.model.abbreviated_time_transformer import \
+from discrete.ml.model.abbreviated_time_transformer import \
     AbbreviatedTimeTransformer
-from discrete.model.variable_time_transformer import VariableTimeTransformer
-from discrete.toy_data import ToyTimeSeriesDataset
-from discrete.trainer import AbbreviatedModelTrainer, VariableModelTrainer, \
+from discrete.ml.model.variable_time_transformer import VariableTimeTransformer
+from discrete.ml.toy_data import ToyTimeSeriesDataset
+from discrete.ml.trainer import AbbreviatedModelTrainer, VariableModelTrainer, \
     ModelTrainer
+from discrete.ml.price_dataset import PriceDataset
+from discrete.bot.config import price_history_sql_path
+from discrete.bot.stock_sql import StockSQL
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,6 +47,10 @@ def main(cfg: dict):
     model = get_model(mp)
     trainer = get_trainer(mp, tp, model)
 
+    PriceDataset(
+        src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
+        db_name=price_history_sql_path, table_name=StockSQL.PRICE_HISTORY_TABLE
+    )
     dataset = ToyTimeSeriesDataset(
         src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
         n_features=mp.n_time_features + mp.n_linear_features,
