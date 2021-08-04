@@ -70,11 +70,6 @@ class ToyTimeSeriesDataset(Dataset):
         )
         return [(sub[:-self.tgt_window], sub[-self.tgt_window:]) for sub in raw]
 
-    def __len__(self) -> int:
-        if self.use_rw:
-            return len(self.ts_data)
-        return self.src_data.shape[0]
-
     def __getitem__(self, item: int) -> Dict[str, Tensor]:
         r"""The simple item getter method.
 
@@ -92,6 +87,11 @@ class ToyTimeSeriesDataset(Dataset):
             'src': self.src_data[item],
             'tgt': self.tgt_data[item]
         }
+
+    def __len__(self) -> int:
+        if self.use_rw:
+            return len(self.ts_data)
+        return self.src_data.shape[0]
 
 
 def main():

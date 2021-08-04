@@ -1,6 +1,6 @@
 import re
 import time
-from typing import List, Set, Union
+from typing import Generator, List, Set, Union
 
 import pandas as pd
 import ratelimit
@@ -24,7 +24,7 @@ _securities_html_pattern = (
 )
 
 
-class TdaAPI(object):
+class TDAClient(object):
     TOO_MANY_REQUESTS_CODE = 429
     SUCCESS_CODE = 200
 
@@ -51,11 +51,11 @@ class TdaAPI(object):
             frequency_type=frequency_type,
             frequency=frequency,
         )
-        if resp.status_code == TdaAPI.SUCCESS_CODE:
+        if resp.status_code == TDAClient.SUCCESS_CODE:
             return pd.json_normalize(
                 resp.json(), record_path=["candles"], meta=["symbol"]
             )
-        elif resp.status_code == TdaAPI.TOO_MANY_REQUESTS_CODE:
+        elif resp.status_code == TDAClient.TOO_MANY_REQUESTS_CODE:
             time.sleep(60)
             return self.price_history(
                 security, period_type, period, frequency_type, frequency
@@ -69,7 +69,7 @@ class TdaAPI(object):
             period: Client.PriceHistory.Period,
             frequency_type: Client.PriceHistory.FrequencyType,
             frequency: Client.PriceHistory.Frequency,
-    ):
+    ) -> Generator[pd.DataFrame]:
         for security in securities:
             print(security)
             yield self.price_history(
@@ -105,7 +105,7 @@ def update_sql(data: pd.DataFrame, sql: StockSQL):
     sql.insert_pd(insert_sql, data)
 
 
-def fetch_all_and_update_sql(api: TdaAPI):
+def fetch_all_and_update_sql(api: TDAClient):
     sql = StockSQL(price_history_sql_path)
     securities = fetch_securities_list(intermediary=True, sql=sql)
     for price_history in api.parallel_price_history(
@@ -118,7 +118,7 @@ def fetch_all_and_update_sql(api: TdaAPI):
         update_sql(price_history, sql)
 
 
-def _list_generator(l, rate: int) -> List:
+def _list_generator(l, rate: int) -> Generator:
     idx = rate
     prev_idx = 0
     while idx < len(l):
@@ -128,7 +128,7 @@ def _list_generator(l, rate: int) -> List:
 
 
 def main():
-    api = TdaAPI()
+    api = TDAClient()
     fetch_all_and_update_sql(api)
 
 

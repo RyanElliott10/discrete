@@ -69,7 +69,7 @@ class StockSQL(object):
 
     def fetch_securities(
             self,
-            securities: Union[List[str], str],
+            securities: Union[Set[str], str],
             meta: str,
             table: str
     ) -> pd.DataFrame:
@@ -94,7 +94,7 @@ class StockSQL(object):
 
     @staticmethod
     def parse_meta(meta: str) -> List[str]:
-        comp = ["security"]
+        comp = ["security", "datetime"]
         if "O" in meta:
             comp.append("open")
         if "H" in meta:
@@ -105,7 +105,8 @@ class StockSQL(object):
             comp.append("close")
         if "V" in meta:
             comp.append("volume")
-        comp.append("datetime")
+        if "S" in meta:
+            comp.append("short_squeeze")
         return comp
 
     @staticmethod

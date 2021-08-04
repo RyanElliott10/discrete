@@ -47,18 +47,20 @@ def main(cfg: dict):
     model = get_model(mp)
     trainer = get_trainer(mp, tp, model)
 
-    PriceDataset(
+    pdataset = PriceDataset(
         src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
-        db_name=price_history_sql_path, table_name=StockSQL.PRICE_HISTORY_TABLE
+        db_name=price_history_sql_path, table_name=StockSQL.PRICE_HISTORY_TABLE,
+        securities={"aapl", "gme", "spy"}
     )
     dataset = ToyTimeSeriesDataset(
         src_window=mp.src_window_len, tgt_window=mp.tgt_window_len,
         n_features=mp.n_time_features + mp.n_linear_features,
         n_out_features=mp.n_out_features, n_data=1
     )
-    dataloader = DataLoader(dataset, batch_size=tp.batch_size, shuffle=True)
+    data_loader = DataLoader(dataset, batch_size=tp.batch_size, shuffle=True)
+    data_loader = DataLoader(pdataset, batch_size=tp.batch_size, shuffle=True)
 
-    trainer.train(dataloader)
+    trainer.train(data_loader)
 
 
 if __name__ == "__main__":

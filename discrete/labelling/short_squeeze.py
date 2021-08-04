@@ -4,14 +4,13 @@ import pandas as pd
 
 from discrete.bot.config import price_history_sql_path
 from discrete.stock_sql import StockSQL
-from discrete.strategies.strategy import Strategy
-from discrete.utils import overrides
+from discrete.labelling import LabellingStrategy
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_colwidth', None)
 
 
-class ShortSqueezeLabeller(Strategy):
+class ShortSqueezeLabeller(LabellingStrategy):
     r"""A class that labels data based on the short squeeze strategy. This uses
     a basic sliding standard deviation window. If any point within that window
     exceeds the threshold, this is labelled as part of a short squeeze.\
@@ -33,7 +32,6 @@ class ShortSqueezeLabeller(Strategy):
         self.stddev_threshold = stddev_threshold
         self.alt_threshold = alt_threshold
 
-    @overrides(Strategy)
     def label(self, data: pd.DataFrame):
         label_inter = self._df_label_inter()
         label_final = self.df_label()

@@ -1,18 +1,17 @@
 import pandas as pd
 import pandas_ta as ta
 
-from discrete.strategies.strategy import Strategy
-from discrete.utils import overrides
+from discrete.labelling import LabellingStrategy
 
 
-class BLSHLabeller(Strategy):
+class BLSHLabeller(LabellingStrategy):
     r"""Buy Low Sell High is a very basic stratgey that simply identifies
     opportune times to buy into a security, and opportune times to exit the
     position.
     """
 
     def __init__(self):
-        self.tastrat = ta.Strategy(
+        self.tastrat = ta.LabellingStrategy(
             name="foo", ta=[
                 {"kind": "sma", "length": 7},
                 {"kind": "sma", "length": 12},
@@ -20,7 +19,6 @@ class BLSHLabeller(Strategy):
                 {"kind": "macd"}
             ])
 
-    @overrides(Strategy)
     def label(self, data: pd.DataFrame):
         # data.ta.sma(length=20, append=True)
         # data.ta.macd(append=True)
