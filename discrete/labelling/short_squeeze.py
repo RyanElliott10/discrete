@@ -3,7 +3,7 @@ from typing import List
 import pandas as pd
 
 from discrete.bot.config import price_history_sql_path
-from discrete.stock_sql import StockSQL
+from discrete.bot.stock_sql import StockSQL
 from discrete.labelling import LabellingStrategy
 
 pd.set_option('display.max_rows', None)

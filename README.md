@@ -1,6 +1,22 @@
 # discrete
 
 ## Commitments
+* NLP
+* Buying/selling
+    * Importantly, we may be able to get by just writing a basic backtester. 
+      Aside from data, there is no real need to interact with an API
+* Multithreading
+
+## Crude Plan
+Gotta get this done ASAP so we will *not* be connecting to TDA or any other 
+API to make trades. Instead, we will scrape historical data from these 
+services and writing our own backtester, or more likely using a library. We 
+can ask for news on a given set of securities that we'll support, turn the 
+processing of these articles through the NLP model into something that 
+supports multi-threading, and then run this through the algorithm. The 
+StockNewsAPI already labels the articles for us so we can use that as 
+training data. May also end up just using the title rather than having to 
+make another request to read and parse the article.
 
 ### News
 

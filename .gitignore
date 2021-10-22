@@ -5,6 +5,7 @@ runs/
 data/
 .vscode/
 *token.pickle
+discrete/news/private.py
 etc/
 share/
 
