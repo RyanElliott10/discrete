@@ -1,6 +1,6 @@
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import List
 
 import requests
 
@@ -12,10 +12,6 @@ from discrete.news.private import news_api_key
 
 NEWS_API_MAX_ITEMS = 50
 NEWS_API_START_DATE = datetime.datetime(2019, 2, 1)
-
-UnixDateTimestamp = int
-UnixDateRange = Tuple[UnixDateTimestamp, UnixDateTimestamp]
-DateRange = Tuple[datetime.datetime, datetime.datetime]
 
 
 class Fetcher(ABC):

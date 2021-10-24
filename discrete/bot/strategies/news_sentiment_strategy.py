@@ -1,5 +1,7 @@
 import backtrader as bt
+
 from discrete.news.news_fetcher import NewsFetcher
+from discrete.news.analyzers.news_sentiment_analyzer import NewsSentimentAnalyzer
 
 
 class NewsSentimentStrategy(bt.Strategy):

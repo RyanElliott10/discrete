@@ -3,17 +3,13 @@ from typing import List, Tuple, Union
 
 from discrete.news.article import Article
 
-NEWS_API_MAX_ITEMS = 50
-NEWS_API_START_DATE = datetime.datetime(2019, 2, 1)
-
 UnixDateTimestamp = int
 UnixDateRange = Tuple[UnixDateTimestamp, UnixDateTimestamp]
 DateRange = Tuple[datetime.datetime, datetime.datetime]
 
 
 class NewsCache(object):
-    r"""
-    Largely used by the NewsFetcher. The user should have no reason to
+    r"""Largely used by the NewsFetcher. The user should have no reason to
     directly touch this class.
 
     Maintains a state of NewsAPI articles that have already been fetched

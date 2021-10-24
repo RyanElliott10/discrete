@@ -1,0 +1,1 @@
+# Add multiprocessing support for running multiple backtests at once

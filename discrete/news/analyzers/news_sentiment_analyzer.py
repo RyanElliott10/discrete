@@ -1,0 +1,2 @@
+class NewsSentimentAnalyzer(object):
+    pass
