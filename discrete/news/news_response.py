@@ -9,10 +9,17 @@ class NewsResp(object):
         self.articles = articles
 
     @staticmethod
-    def from_json(jsonstr: str):
+    def from_json_str(jsonstr: str) -> "NewsResp":
         articles = []
         articles_dict = json.loads(jsonstr)
         for article in articles_dict["data"]:
+            articles.append(Article(**article))
+        return NewsResp(articles)
+
+    @staticmethod
+    def from_json_dict(json_dict) -> "NewsResp":
+        articles = []
+        for article in json_dict["data"]:
             articles.append(Article(**article))
         return NewsResp(articles)
 
@@ -21,9 +28,8 @@ def debug_main():
     with open("data/news/news_response.json", "r") as f:
         jsonstr = f.read()
 
-    news = NewsResp.from_json(jsonstr)
-    print(news.articles)
-
+    news = NewsResp.from_json_str(jsonstr)
+    Article.print_article_list(news.articles)
 
 
 if __name__ == "__main__":

@@ -24,12 +24,15 @@ class Article(object):
         self.type = type
         self.mentioned_tickers = tickers
 
+    @staticmethod
+    def print_article_list(articles: List["Article"]):
+        print(f"{len(articles)} articles")
+        print("\n\n".join(map(str, articles)))
 
     def __str__(self):
         return f"title: {self.title}\nmentioned_tickers: " \
                f"{self.mentioned_tickers}\nsentiment: " \
-               f"{self.sentiment}\ntopics: {self.topics}"
-
+               f"{self.sentiment}\ntopics: {self.topics}\ndate: {self.date}"
 
     def __repr__(self):
         return self.__str__()

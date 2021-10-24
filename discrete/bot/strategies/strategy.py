@@ -8,5 +8,6 @@ class Strategy(ABC):
     def consume(self, candle: TDACandle):
         raise NotImplementedError
 
+    @abstractmethod
     def act(self):
         raise NotImplementedError
