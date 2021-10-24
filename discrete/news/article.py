@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import List
+
 
 class Article(object):
     def __init__(
@@ -12,13 +14,13 @@ class Article(object):
             topics: List[str],
             sentiment: str,
             type: str,
-            tickers: str
+            tickers: List[str]
     ):
         self.news_url = news_url
         self.title = title
         self.text = text
         self.source = source_name
-        self.date = date
+        self.date = datetime.strptime(date, "%a, %d %b %Y %H:%M:%S %z")
         self.topics = topics
         self.sentiment = sentiment
         self.type = type

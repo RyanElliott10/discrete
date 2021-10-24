@@ -1,16 +1,21 @@
 import datetime
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 
 import requests
 
 from discrete.news.article import Article
 from discrete.news.network_exception import NetworkException
+from discrete.news.news_cache import NewsCache
 from discrete.news.news_response import NewsResp
 from discrete.news.private import news_api_key
 
-
 NEWS_API_MAX_ITEMS = 50
+NEWS_API_START_DATE = datetime.datetime(2019, 2, 1)
+
+UnixDateTimestamp = int
+UnixDateRange = Tuple[UnixDateTimestamp, UnixDateTimestamp]
+DateRange = Tuple[datetime.datetime, datetime.datetime]
 
 
 class Fetcher(ABC):
@@ -24,12 +29,13 @@ class NewsFetcher(Fetcher):
 
     def __init__(
             self,
-            start: datetime.datetime,
+            start: datetime.datetime = NEWS_API_START_DATE,
             end: datetime.datetime = datetime.datetime.today()
     ):
         self.api_key = news_api_key
         self.start = start
         self.end = end
+        self._cache = NewsCache()
 
     def get_base_url(self) -> str:
         return self.base_url
@@ -69,10 +75,8 @@ class NewsFetcher(Fetcher):
         stocknewsapi.com/api/v1?tickers={tickers}\
             &items={num_items}&token={token}
         """
-        comps = []
-        comps.append(self._build_tickers_str(tickers))
-        comps.append(self._build_items_str(num_items))
-        comps.append(self._build_api_key_str())
+        comps = [self._build_tickers_str(tickers),
+                 self._build_items_str(num_items), self._build_api_key_str()]
         if self.start is not None:
             comps.append(self._build_date_range())
         return self._build_url_str_from_components(comps)
