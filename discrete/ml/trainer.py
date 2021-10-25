@@ -43,7 +43,7 @@ class ModelTrainer(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def train(self, data_loader: DataLoader = None):
+    def train(self, data_loader: DataLoader):
         raise NotImplementedError
 
 
@@ -83,10 +83,7 @@ class AbbreviatedModelTrainer(ModelTrainer):
     def train_debug(self):
         pass
 
-    def train(self, data_loader: DataLoader = None):
-        r"""Note that not passing a data_loader is not supported at this
-        moment.
-        """
+    def train(self, data_loader: DataLoader):
         if data_loader is None:
             src, tgt = self.generate_rand_data()
 
@@ -167,7 +164,7 @@ class VariableModelTrainer(ModelTrainer):
     def train_debug(self):
         pass
 
-    def train(self, data_loader: DataLoader = None):
+    def train(self, data_loader: DataLoader):
         r"""Note that not passing a data_loader is not supported at this
         moment. This assumes the training of a non-CrossEntropy model. i.e.,
         the output will not be undergo an argmax.

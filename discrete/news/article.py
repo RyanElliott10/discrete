@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import Iterable, Set
 
 
 class Article(object):
@@ -11,10 +11,10 @@ class Article(object):
             text: str,
             source_name: str,
             date: str,
-            topics: List[str],
+            topics: Iterable[str],
             sentiment: str,
             type: str,
-            tickers: List[str]
+            tickers: Iterable[str]
     ):
         self.news_url = news_url
         self.title = title
@@ -24,16 +24,16 @@ class Article(object):
         self.topics = topics
         self.sentiment = sentiment
         self.type = type
-        self.mentioned_tickers = tickers
+        self.tickers = [t.casefold() for t in tickers]
 
     @staticmethod
-    def print_article_list(articles: List["Article"]):
+    def print_article_list(articles: Iterable["Article"]):
         print(f"{len(articles)} articles")
         print("\n\n".join(map(str, articles)))
 
     def __str__(self):
         return f"title: {self.title}\nmentioned_tickers: " \
-               f"{self.mentioned_tickers}\nsentiment: " \
+               f"{self.tickers}\nsentiment: " \
                f"{self.sentiment}\ntopics: {self.topics}\ndate: {self.date}"
 
     def __repr__(self):

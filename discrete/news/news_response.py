@@ -1,26 +1,26 @@
 import json
-from typing import List
+from typing import Set
 
 from discrete.news.article import Article
 
 
 class NewsResp(object):
-    def __init__(self, articles: List[Article]):
+    def __init__(self, articles: Set[Article]):
         self.articles = articles
 
     @staticmethod
     def from_json_str(jsonstr: str) -> "NewsResp":
-        articles = []
+        articles = set()
         articles_dict = json.loads(jsonstr)
         for article in articles_dict["data"]:
-            articles.append(Article(**article))
+            articles.add(Article(**article))
         return NewsResp(articles)
 
     @staticmethod
     def from_json_dict(json_dict) -> "NewsResp":
-        articles = []
+        articles = set()
         for article in json_dict["data"]:
-            articles.append(Article(**article))
+            articles.add(Article(**article))
         return NewsResp(articles)
 
 

@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Tuple, Union
+from typing import Tuple, Union, Set, Iterable, List
 
 from discrete.news.article import Article
 
@@ -15,18 +15,22 @@ class NewsCache(object):
     Maintains a state of NewsAPI articles that have already been fetched
     based on tickers and date ranges. This reduces the number of network calls,
     thereby reducing network strain and reducing API costs.
+
+    TODO: Implement sparse ranges for improved performance.
     """
+
+    RANGES_IMPLEMENTED = False  # Marks broken ranges
 
     class _NewsCacheTicker(object):
         def __init__(self, ticker: str):
             self.ticker = ticker
-            self.ranges: List[UnixDateTimestamp] = []
+            self.ranges: List[UnixDateRange] = []
             self.articles: List[Article] = []
 
         @staticmethod
         def _get_timestamp_range(
                 inp_range: DateRange
-        ) -> List[UnixDateTimestamp]:
+        ) -> Iterable[UnixDateTimestamp]:
             r"""Converts a pseudo-range of datetime.datetime to an expanded
             range of UnixDateTimestamp, or ints.
             """
@@ -38,10 +42,13 @@ class NewsCache(object):
             r"""Accepts a range that we would like to query for articles.
             Finds any overlap between the input range and cached ranges,
             returning the new DateRange that has not been cached.
+
+            This is broken until it supports the sparser ranges,
+            which themselves have yet to be implemented in
+            self._add_range(date_range)
             """
             timestamp_range = self._get_timestamp_range(date_range)
-            # delta = sorted(list(set(self.ranges) - set(timestamp_range)))
-            delta = set(self.ranges).intersection(set(timestamp_range))
+            delta = set(self.ranges) & set(timestamp_range)
             delta = sorted(list(delta))
             if len(delta) == 0:
                 return date_range
@@ -51,29 +58,34 @@ class NewsCache(object):
         def fetch_articles_in_range(
                 self,
                 date_range: DateRange
-        ) -> List[Article]:
+        ) -> Set[Article]:
             hit = False
-            articles = []
+            articles = set()
 
             for article in self.articles:
                 if date_range[0] < article.date < date_range[1]:
                     hit = True
-                    articles.append(article)
+                    articles.add(article)
                 elif hit:
                     break
 
             return articles
 
-        def query_cache(self, date_range: DateRange) -> List[Article]:
+        def query_cache(self, date_range: DateRange) -> Set[Article]:
             date_range = self.adjust_range_from_cache(date_range)
             return self.fetch_articles_in_range(date_range)
 
-        def _remove_range_duplicates(self):
-            self.ranges = list(dict.fromkeys(self.ranges))
+        def _add_range(self, date_range: DateRange):
+            r"""Merge ranges. This is not fully/correctly implemented at the
+            moment, effectively breaking all caching.
+            """
+            # TODO: Implement extending ranges
+            for drange in self.ranges:
+                pass
+                # if date_range[0] > drange[0] and date_range[1]
 
-        def cache_range(self, date_range: DateRange, articles: List[Article]):
-            self.ranges += self._get_timestamp_range(date_range)
-            self._remove_range_duplicates()
+        def cache_range(self, date_range: DateRange, articles: Set[Article]):
+            self._add_range(date_range)
             self.articles.extend(articles)
             self.articles.sort(key=lambda a: a.date)
 
@@ -81,7 +93,7 @@ class NewsCache(object):
             return f"{self.ticker}, {len(self.articles)} articles"
 
     def __init__(self):
-        self._cached_tickers: List[NewsCache._NewsCacheTicker] = []
+        self._cached_tickers: Set[NewsCache._NewsCacheTicker] = set()
 
     def _fetch_cached_ticker(
             self,
@@ -99,29 +111,42 @@ class NewsCache(object):
             self,
             ticker: str,
             date_range: DateRange
-    ) -> Union[List[Article], None]:
+    ) -> Union[Set[Article], None]:
         r"""Queries the cached tickers. Returns None if the ticker has no
         cache for the given range, a list of Articles within that range,
         otherwise. An empty list means that call has been cached but no
         Articles were returned.
         """
+        if not self.RANGES_IMPLEMENTED:
+            return None
+
         cached_ticker = self._fetch_cached_ticker(ticker)
         if cached_ticker is None:
             return None
         return cached_ticker.query_cache(date_range)
 
+    def query_cached_tickers(self, tickers: Iterable[str]) -> Set[str]:
+        if not self.RANGES_IMPLEMENTED:
+            return set()
+
+        cached_tickers = set(map(lambda t: t.ticker, self._cached_tickers))
+        return cached_tickers & set(tickers)
+
     def cache_range(
             self,
             ticker: str,
             date_range: DateRange,
-            articles: List[Article]
+            articles: Set[Article]
     ):
+        if not self.RANGES_IMPLEMENTED:
+            return
+
         cached_ticker = self._fetch_cached_ticker(ticker)
         if cached_ticker is None:
             cached_ticker = self._NewsCacheTicker(ticker)
 
         cached_ticker.cache_range(date_range, articles)
-        self._cached_tickers.append(cached_ticker)
+        self._cached_tickers.add(cached_ticker)
 
 
 def _generate_article_within_date_range(
@@ -148,12 +173,10 @@ def debug_main():
     cache = NewsCache()
     cache.cache_range(
         "aapl", (datetime.datetime(2019, 7, 8), datetime.datetime(2019, 8, 31)),
-        [
-            _generate_article_within_date_range("aapl",
-                (datetime.datetime(2019, 7, 8), datetime.datetime(2019, 8, 31))
-            ), _generate_article_within_date_range("aapl", (datetime.datetime(
-            2019, 7, 8), datetime.datetime(2019, 8, 31)))
-        ]
+        {_generate_article_within_date_range("aapl",
+            (datetime.datetime(2019, 7, 8), datetime.datetime(2019, 8, 31))
+        ), _generate_article_within_date_range("aapl", (datetime.datetime(
+            2019, 7, 8), datetime.datetime(2019, 8, 31)))}
     )
 
     print(cache.query_cache(
