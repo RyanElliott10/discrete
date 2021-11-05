@@ -8,6 +8,7 @@ data/
 discrete/news/private.py
 etc/
 share/
+charts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

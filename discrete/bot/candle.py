@@ -38,3 +38,8 @@ class TDACandle(object):
         for key, value in cls.tda_names_to_candle().items():
             init_dict[value] = content.pop(key, 0)
         return cls(**init_dict)
+
+    def __str__(self):
+        return f"{self.security} Open: {self.open} High: {self.high} Low: " \
+               f"{self.low} Close: {self.close} Volume: {self.volume} " \
+               f"Timestamp: {self.timestamp}"

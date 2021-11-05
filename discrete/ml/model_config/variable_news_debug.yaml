@@ -1,0 +1,23 @@
+data:
+  train_path: /path/to/train
+  val_path: /path/to/val
+
+model:
+  type: variable
+  src_window_len: 128
+  tgt_window_len: 8
+  n_time_features: 6
+  n_linear_features: 10
+  n_out_features: 3
+  d_time_embed: 128
+  d_linear_embed: 256
+  n_head: 8
+  n_encoder_layers: 6
+  n_decoder_layers: 6
+  dropout: 0.5
+  use_pos_enc: false
+
+training:
+  batch_size: 4
+  n_epochs: 50
+  learning_rate: 0.0001

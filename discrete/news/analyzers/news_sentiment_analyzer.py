@@ -9,5 +9,5 @@ class NewsSentimentAnalyzer(object):
 
     def sentiment_for(self, article: Article):
         content = article.text
-        title = article.text
-        self.model
+        title = article.title
+        return article.sentiment

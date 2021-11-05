@@ -95,12 +95,10 @@ class NewsFetcher(Fetcher):
         ).articles
 
     def _cache_articles(self, tickers: Iterable[str], articles: Set[Article]):
-        print(len(articles))
         for ticker in tickers:
             tarticles = set(filter(
                 lambda a: ticker.casefold() in a.tickers, articles
             ))
-            print(ticker, len(tarticles))
             self._cache.cache_range(ticker, (self.start, self.end), tarticles)
 
     def fetch_news_response(
@@ -134,8 +132,6 @@ class NewsFetcher(Fetcher):
             return news_response
 
         url = self._build_tickers_url(tickers, num_items)
-
-        print(f"Making API request for {url}")
 
         resp = requests.get(url)
         if resp.status_code != 200:
